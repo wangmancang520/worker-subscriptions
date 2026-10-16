@@ -4,7 +4,7 @@
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/wangmancang520/worker-subscriptions)
 
-基于 Cloudflare Workers 与 D1 的自托管订阅转换服务。通过网页管理 VLESS / Trojan 节点，使用 ACL4SSR 官方在线模板生成 Mihomo 配置，利用暗号路径保持编辑地址和订阅地址固定。
+基于 Cloudflare Workers 与 D1 的自托管订阅转换服务。通过网页管理 VLESS / Trojan 节点，使用 ACL4SSR 官方在线模板生成 Mihomo 配置，利用访问密钥路径保持编辑地址和订阅地址固定。
 
 ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)
 ![Storage D1](https://img.shields.io/badge/Storage-D1-F38020)
@@ -16,10 +16,13 @@
 ## 功能亮点
 
 - **固定订阅地址**：更新节点后，客户端直接更新订阅，无需重新导入链接。
-- **个人编辑页面**：通过 `/暗号` 打开之前保存的节点，支持多份独立节点集合。
+- **个人编辑页面**：通过 `/访问密钥` 打开之前保存的节点，支持多份独立节点集合。
 - **D1 持久化**：数据保存在自己的 Cloudflare 数据库，重新部署 Worker 后仍可使用。
 - **Worker 内转换**：不依赖第三方订阅转换站，不向模板服务器发送节点信息。
 - **ACL4SSR 分流**：保留官方在线模板的策略组与规则顺序，生成 Mihomo rule-providers。
+- **18 种在线模板**：支持搜索与分类，默认 ACL4SSR Online Full No Auto，模板选择随配置保存。
+- **四步向导**：首页 → 访问密钥 → 节点与模板 → 订阅链接。
+- **中英文与主题**：自动跟随浏览器语言和系统主题，可随时切换。
 - **明确校验**：错误行、未知参数和不支持的协议直接报错；版本检查防止多页面互相覆盖。
 
 当前版本已通过本地自动测试、Wrangler 打包检查和本地 D1 迁移验证；云端部署及真实代理连接仍需在自己的环境中验证。本项目用于管理和转换已有节点，不提供代理节点或代理流量转发。
@@ -28,7 +31,7 @@
 
 ```mermaid
 flowchart LR
-  A[浏览器：输入暗号和节点] -->|保存| B[Worker API]
+  A[浏览器：输入访问密钥和节点] -->|保存| B[Worker API]
   B --> C[(D1 数据库)]
   D[代理客户端：固定订阅地址] --> E[Worker 配置生成器]
   C --> E
@@ -41,7 +44,7 @@ flowchart LR
 
 | 地址 | 功能 |
 | --- | --- |
-| `/` | 创建暗号和节点集合 |
+| `/` | 创建访问密钥和节点集合 |
 | `/:secret` | 读取并编辑指定集合 |
 | `/:secret/sub` | 下载该集合的最新 Mihomo 配置 |
 
@@ -115,12 +118,15 @@ npm test
 
 ## 使用
 
-1. 首页自动生成 192 位随机暗号；也可以输入至少 16 位的自定义暗号，点击「打开」。
-2. 每行粘贴一个节点链接，点击「保存并生成订阅」。
-3. 将固定订阅地址导入支持 Mihomo 的客户端，例如使用 Mihomo 内核的 Clash 客户端。
-4. 收藏个人编辑地址。以后在该页面修改节点、保存，再在客户端更新订阅。
+1. 首页点击「开始使用」。老用户输入访问密钥打开配置，新用户点击「随机生成密钥并创建」。
+2. 每行粘贴一个节点链接，查看数量、类型和格式检查结果。新密钥在保存节点后才写入数据库。
+3. 搜索或筛选订阅模板，点击「保存并生成订阅」。新配置默认使用 ACL4SSR Online Full No Auto。
+4. 复制订阅链接，在 Mihomo 客户端中选择「从 URL 导入」。结果页同时提供密钥与直达编辑网址，默认遮罩显示。
+5. 以后通过编辑网址或密钥打开配置，修改并保存，在客户端更新原订阅即可。
 
-暗号就是读写凭证，没有另外的账号密码。订阅地址包含同一个暗号，持有订阅地址的人也能编辑节点。请使用默认随机暗号，不要公开地址。数据库只存暗号的 SHA-256，节点内容存储在你自己的 D1 中；这不是端到端加密。页面不将节点写入 localStorage，不引入第三方脚本，响应禁止缓存并禁用 Referrer。不要在 Cloudflare 访问日志中公开含暗号的路径。公开部署建议为 `/api/*` 配置 Cloudflare 限流，避免陌生人批量创建数据。
+右上角可切换中文 / English，以及跟随系统 / 浅色 / 深色主题。首次访问时，简体中文浏览器使用中文，其余语言使用英语。浏览器只保存语言和主题偏好，不保存节点与密钥。
+
+访问密钥就是读写凭证，没有另外的账号密码。订阅地址包含同一个访问密钥，持有订阅地址的人也能编辑节点。请使用默认随机访问密钥，不要公开地址。数据库只存访问密钥的 SHA-256，节点内容存储在你自己的 D1 中；这不是端到端加密。页面不将节点写入 localStorage，不引入第三方脚本，响应禁止缓存并禁用 Referrer。不要在 Cloudflare 访问日志中公开含访问密钥的路径。公开部署建议为 `/api/*` 配置 Cloudflare 限流，避免陌生人批量创建数据。
 
 ## 支持范围
 
@@ -133,9 +139,19 @@ npm test
 
 ## ACL4SSR 模板
 
-使用官方 [ACL4SSR_Online.ini](https://github.com/ACL4SSR/ACL4SSR/blob/master/Clash/config/ACL4SSR_Online.ini)。首次订阅时获取，Worker 实例内缓存 1 小时。转换器解析模板里的 `custom_proxy_group` 和 `ruleset`，保留分组与规则顺序。规则列表转成 Mihomo HTTP rule-providers，由客户端从 ACL4SSR 官方仓库更新。节点链接不会发送给模板服务器。
+内置 18 种 [ACL4SSR 官方在线模板](https://github.com/ACL4SSR/ACL4SSR/tree/master/Clash/config)，核对日期为 2026-10-16，上游模板目录最近更新于 2026-06-23。提供中英文说明、搜索和分类。
 
-本实现针对此官方模板，不是完整 subconverter INI 解释器。模板获取失败返回 502；客户端初次下载规则需要访问 GitHub。模板以及规则上游变更可能影响后续配置，追求固定版本时可将 `TEMPLATE_URL` 和规则来源验证逻辑改成经验证的提交地址。
+| 系列 | 预设 |
+| --- | --- |
+| Full | No Auto（默认）、Full、Adblock Plus、Google、Netflix、Multi Mode |
+| Standard | Online、No Auto、Adblock Plus、Multi Country、No Reject |
+| Mini | Mini、No Auto、Adblock Plus、AI、Fallback、Multi Country、Multi Mode |
+
+支持手动选择、自动测速、故障转移和负载均衡。没有匹配节点的地区组会移除并清理引用，规则顺序保留。各模板在 Worker 实例内缓存 1 小时。规则转成 Mihomo HTTP rule-providers，由客户端从官方仓库更新。节点不会发送给模板服务器。
+
+旧配置迁移后继续使用原 Online 模板，可在编辑页重新选择。迁移只新增模板字段，不清空原有节点。
+
+本实现针对所列模板，不是完整 subconverter INI 解释器，不支持任意自定义模板 URL。模板获取失败返回 502；客户端初次下载规则需要访问 GitHub。上游变更可能影响后续配置，固定版本时可调整 public/templates.js 中的来源和对应规则校验逻辑。
 
 ## 文件与接口
 
@@ -145,8 +161,8 @@ npm test
 | `src/worker.js` | API、持久化、静态页面路由 |
 | `src/converter.js` | 节点解析、模板转换 |
 | `migrations/` | D1 表结构 |
-| `GET /api/profiles/:secret` | 读取节点及版本 |
-| `PUT /api/profiles/:secret` | `{nodes, revision}`，创建 revision=0，更新使用读取到的版本 |
+| `GET /api/profiles/:secret` | 读取节点、模板及版本 |
+| `PUT /api/profiles/:secret` | `{nodes, revision, template}`，创建 revision=0，更新使用读取到的版本 |
 | `GET /:secret/sub` | 当前节点的 Mihomo 配置 |
 
 API 不提供公开用户列表。写操作要求同源 Origin，版本不匹配返回 409。前后端在源代码与职责上分离，通过 HTTP API 通信；同源部署便于保护写入接口。
@@ -157,20 +173,20 @@ API 不提供公开用户列表。写操作要求同源 Origin，版本不匹配
 
 先确认网页显示保存成功，再在客户端主动更新原订阅。仅修改文本框不会写入数据库。订阅响应设置 `no-store`，但客户端的自动更新周期由客户端决定。
 
-**忘记暗号怎么办？**
+**忘记访问密钥怎么办？**
 
-如果仍保留订阅链接，可以从其中找到暗号路径。没有找回账号或重置暗号功能，请收藏编辑地址；不要把它放进公开书签或 Issue。
+如果仍保留订阅链接，可以从其中找到访问密钥路径。没有找回账号或重置访问密钥功能，请收藏编辑地址；不要把它放进公开书签或 Issue。
 
 **保存时提示版本冲突？**
 
-说明同一个暗号已在其他页面更新。先自行保留尚未保存的修改，重新打开个人页面，合并内容后再保存。
+说明同一个访问密钥已在其他页面更新。先自行保留尚未保存的修改，重新打开个人页面，合并内容后再保存。
 
 **页面能打开，但无法保存或下载订阅？**
 
 - `503`：检查 `DB` 绑定、数据库 ID，以及是否已执行远程迁移。
 - `502`：检查 ACL4SSR 模板访问和上游格式，稍后重试。
-- `400`：按页面提示检查节点协议、参数和暗号格式。
-- `404`：确认暗号正确且对应节点已保存。
+- `400`：按页面提示检查节点协议、参数和访问密钥格式。
+- `404`：确认访问密钥正确且对应节点已保存。
 
 **部署报 10181，数据库 ID 为全零？**
 
@@ -178,11 +194,11 @@ API 不提供公开用户列表。写操作要求同源 Origin，版本不匹配
 
 **能把订阅链接分享给别人使用吗？**
 
-当前订阅与编辑共用暗号，分享订阅也会授予编辑能力。当前版本没有独立的只读订阅令牌。
+当前订阅与编辑共用访问密钥，分享订阅也会授予编辑能力。当前版本没有独立的只读订阅令牌。
 
 ## 反馈与贡献
 
-欢迎通过 [GitHub Issues](https://github.com/wangmancang520/worker-subscriptions/issues) 提交问题或功能建议。请提供复现步骤、客户端及内核版本、错误提示和预期行为。节点示例应替换服务器、UUID、密码和 Reality 公钥；不要附带真实暗号、完整订阅地址或 API Token。
+欢迎通过 [GitHub Issues](https://github.com/wangmancang520/worker-subscriptions/issues) 提交问题或功能建议。请提供复现步骤、客户端及内核版本、错误提示和预期行为。节点示例应替换服务器、UUID、密码和 Reality 公钥；不要附带真实访问密钥、完整订阅地址或 API Token。
 
 修改转换逻辑后请运行 `npm test`。当前没有为本项目指定开源许可证；公开仓库不代表授予任意再分发或商业使用权限。第三方模板及规则遵循其上游项目的条款。
 
@@ -193,4 +209,3 @@ API 不提供公开用户列表。写操作要求同源 Origin，版本不匹配
 - [Mihomo](https://github.com/MetaCubeX/mihomo)：配置消费端内核。
 
 参考：[Workers 静态资源](https://developers.cloudflare.com/workers/static-assets/)、[Wrangler 配置](https://developers.cloudflare.com/workers/wrangler/configuration/)。
-

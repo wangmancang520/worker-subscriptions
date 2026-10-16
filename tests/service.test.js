@@ -34,6 +34,7 @@ test('official template keeps group and rule ordering', () => {
 test('D1 lifecycle, optimistic concurrency, authorization and stable subscription', async () => {
   const db = new DatabaseSync(':memory:');
   db.exec(readFileSync(new URL('../migrations/0001_profiles.sql',import.meta.url),'utf8'));
+  db.exec(readFileSync(new URL('../migrations/0002_template.sql',import.meta.url),'utf8'));
   const env = {DB:{prepare(sql) {return {bind(...values) {return {async first() {return db.prepare(sql).get(...values);},async run() {return {meta:db.prepare(sql).run(...values)};}};}};}},ASSETS:{fetch:async () => new Response('<html>editor</html>')}};
   const secret = 'test-secret-123456789';
   const call = (path,method='GET',data,origin='https://test.example') => worker.fetch(new Request(`https://test.example${path}`,{method,headers:{'Content-Type':'application/json',Origin:origin},...(data ? {body:JSON.stringify(data)} : {})}),env);
@@ -43,14 +44,19 @@ test('D1 lifecycle, optimistic concurrency, authorization and stable subscriptio
   assert.equal((await call(path,'PUT',{nodes:node,revision:0})).status,200);
   assert.equal((await call(path,'PUT',{nodes:node,revision:0})).status,409);
   assert.equal((await (await call(path)).json()).revision,1);
+  assert.equal((await (await call(path)).json()).template,'online');
+  assert.equal((await call(path,'PUT',{nodes:node,revision:1,template:'unknown-template'})).status,400);
   const oldFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(template);
   try {
     const first = await call(`/${secret}/sub`);
     assert.equal(first.headers.get('Cache-Control'),'no-store');
     assert.equal((await first.json()).proxies[0].server,'example.com');
-    assert.equal((await call(path,'PUT',{nodes:node.replace('@example.com','@new.example.com'),revision:1})).status,200);
+    assert.equal((await call(path,'PUT',{nodes:node.replace('@example.com','@new.example.com'),revision:1,template:'full-noauto'})).status,200);
+    assert.equal((await (await call(path)).json()).template,'full-noauto');
     assert.equal((await (await call(`/${secret}/sub`)).json()).proxies[0].server,'new.example.com');
+    assert.equal((await call(path,'PUT',{nodes:node,revision:2})).status,200);
+    assert.equal((await (await call(path)).json()).template,'full-noauto');
     assert.equal((await call('/unknown-secret-12345/sub')).status,404);
     assert.equal((await call(`/${secret}`)).status,200);
     assert.equal((await call('/api/not-found')).status,404);

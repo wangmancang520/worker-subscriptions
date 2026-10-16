@@ -1,0 +1,1 @@
+ALTER TABLE profiles ADD COLUMN template TEXT NOT NULL DEFAULT 'online';
