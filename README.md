@@ -2,6 +2,8 @@
 
 **节点会变，订阅地址不变。**
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/wangmancang520/worker-subscriptions)
+
 基于 Cloudflare Workers 与 D1 的自托管订阅转换服务。通过网页管理 VLESS / Trojan 节点，使用 ACL4SSR 官方在线模板生成 Mihomo 配置，利用暗号路径保持编辑地址和订阅地址固定。
 
 ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)
@@ -47,7 +49,22 @@ flowchart LR
 
 需要自己的 Cloudflare 账号。本地开发建议使用 Node.js 24 与 npm（本项目测试使用 Node 内置 SQLite）。GitHub 仅托管源码，服务运行于 Cloudflare Workers，不适用于 GitHub Pages。
 
-### 方式一：本地命令行部署
+### 方式一：一键部署（推荐）
+
+点击上方 **Deploy to Cloudflare** 按钮，按向导完成以下操作：
+
+1. 登录 Cloudflare，并授权连接自己的 GitHub 账号。
+2. 确认新仓库、Worker 和 D1 数据库的名称。
+3. 保留自动识别的部署命令 `npm run deploy`（使用 pnpm 时为 `pnpm run deploy`），然后确认部署。
+4. 等待部署完成，打开分配的 `workers.dev` 地址，保存节点并导入订阅。
+
+Cloudflare 会将此模板复制到你的 Git 账号，自动创建 D1 并更新新仓库中的数据库 ID。项目的 `deploy` 脚本先运行数据库迁移，再部署 Worker，因此无需手动建表。构建命令可以留空，本项目没有前端编译步骤。
+
+模板中的全零 `database_id` 只是占位符；一键部署流程负责替换。不要把模板占位值覆盖回已经部署的仓库。后续修改应推送到部署向导创建并连接的仓库；原始模板的更新不会自动同步过去。
+
+按钮及迁移脚本已配置；完整的账号授权、资源创建和首次云端部署仍需要在你的 Cloudflare 账号内验证。参见 [Cloudflare 官方一键部署说明](https://developers.cloudflare.com/workers/platform/deploy-buttons/)。
+
+### 方式二：本地命令行部署
 
 ```sh
 git clone https://github.com/wangmancang520/worker-subscriptions.git
@@ -60,13 +77,12 @@ npx wrangler d1 create subscriptions
 将返回的 `database_id` 填入 `wrangler.jsonc`，然后执行：
 
 ```sh
-npm run db:remote
 npm run deploy
 ```
 
 访问 Wrangler 返回的 `https://worker-subscriptions.<你的子域>.workers.dev`。也可以在 Cloudflare Workers 设置中绑定自定义域名。前端资源与后端一起部署，不需要 Pages 或第三方订阅转换服务器。不要将占位 database_id 直接用于生产部署。
 
-### 方式二：GitHub 自动部署
+### 方式三：已有仓库连接 GitHub 自动部署
 
 1. 将本项目保存到你有管理权限的 GitHub 仓库。
 2. 在 Cloudflare 创建名为 `subscriptions` 的 D1 数据库，将它的 ID 填入 `wrangler.jsonc` 并提交到仓库。数据库 ID 是资源标识；不要把 Cloudflare API Token 提交到仓库。
@@ -78,7 +94,7 @@ npm run deploy
 | 生产分支 | `main` |
 | 根目录 | 仓库根目录 |
 | 构建命令 | `npm test` |
-| 部署命令 | `npx wrangler d1 migrations apply DB --remote && npx wrangler deploy` |
+| 部署命令 | `npm run deploy` |
 
 4. 确认构建环境使用 Node.js 24，部署凭证具有 Worker 部署和对应 D1 数据库编辑权限。
 5. 部署成功后访问分配的 `workers.dev` 域名，保存一份节点并在客户端验证订阅。之后推送到 `main` 即可触发后续部署。
@@ -171,4 +187,3 @@ API 不提供公开用户列表。写操作要求同源 Origin，版本不匹配
 - [Mihomo](https://github.com/MetaCubeX/mihomo)：配置消费端内核。
 
 参考：[Workers 静态资源](https://developers.cloudflare.com/workers/static-assets/)、[Wrangler 配置](https://developers.cloudflare.com/workers/wrangler/configuration/)。
-
