@@ -58,9 +58,11 @@ flowchart LR
 3. 保留自动识别的部署命令 `npm run deploy`（使用 pnpm 时为 `pnpm run deploy`），然后确认部署。
 4. 等待部署完成，打开分配的 `workers.dev` 地址，保存节点并导入订阅。
 
-Cloudflare 会将此模板复制到你的 Git 账号，自动创建 D1 并更新新仓库中的数据库 ID。项目的 `deploy` 脚本先运行数据库迁移，再部署 Worker，因此无需手动建表。构建命令可以留空，本项目没有前端编译步骤。
+Cloudflare 会将此模板复制到你的 Git 账号。项目的 `deploy` 脚本会保留已有真实数据库 ID；未配置 ID 时，按 `database_name` 查找数据库，不存在则创建，再写入真实 ID、运行迁移并部署 Worker。需要部署凭证拥有对应账号的 D1 读取及编辑权限。构建命令可以留空，本项目没有前端编译步骤。
 
-模板中的全零 `database_id` 只是占位符；一键部署流程负责替换。不要把模板占位值覆盖回已经部署的仓库。后续修改应推送到部署向导创建并连接的仓库；原始模板的更新不会自动同步过去。
+模板不设置虚假的数据库 ID。部署脚本兼容早期全零占位值；真实 ID 写入本次构建目录，不会自动提交回 GitHub。建议首次成功后将真实 ID 保存到自己的仓库，尤其是在重命名数据库或部署多个实例之前。没有 ID 时会复用同名数据库：独立实例应设置不同的 `database_name`。后续修改应推送到部署向导创建并连接的仓库；原始模板的更新不会自动同步过去。
+
+**已有 Cloudflare 项目必须检查其保存的部署命令为 `npm run deploy`。** 仓库更新不会自动改变控制台中的旧命令。直接运行 `npx wrangler deploy` 会跳过本项目的数据库准备和迁移步骤。
 
 按钮及迁移脚本已配置；完整的账号授权、资源创建和首次云端部署仍需要在你的 Cloudflare 账号内验证。参见 [Cloudflare 官方一键部署说明](https://developers.cloudflare.com/workers/platform/deploy-buttons/)。
 
@@ -80,7 +82,7 @@ npx wrangler d1 create subscriptions
 npm run deploy
 ```
 
-访问 Wrangler 返回的 `https://worker-subscriptions.<你的子域>.workers.dev`。也可以在 Cloudflare Workers 设置中绑定自定义域名。前端资源与后端一起部署，不需要 Pages 或第三方订阅转换服务器。不要将占位 database_id 直接用于生产部署。
+访问 Wrangler 返回的 `https://worker-subscriptions.<你的子域>.workers.dev`。也可以在 Cloudflare Workers 设置中绑定自定义域名。前端资源与后端一起部署，不需要 Pages 或第三方订阅转换服务器。配置了真实 ID 后，部署脚本会使用该数据库，不会另建替代数据库。
 
 ### 方式三：已有仓库连接 GitHub 自动部署
 
@@ -170,6 +172,10 @@ API 不提供公开用户列表。写操作要求同源 Origin，版本不匹配
 - `400`：按页面提示检查节点协议、参数和暗号格式。
 - `404`：确认暗号正确且对应节点已保存。
 
+**部署报 10181，数据库 ID 为全零？**
+
+同步最新代码，并将 Cloudflare Workers 项目设置中的部署命令改为 `npm run deploy`，然后重新构建。确认使用的仓库也包含 `scripts/deploy.js`。如果已有数据库，直接将其真实 ID 填入 `wrangler.jsonc`；不要删除或重建现有数据库。
+
 **能把订阅链接分享给别人使用吗？**
 
 当前订阅与编辑共用暗号，分享订阅也会授予编辑能力。当前版本没有独立的只读订阅令牌。
@@ -187,3 +193,4 @@ API 不提供公开用户列表。写操作要求同源 Origin，版本不匹配
 - [Mihomo](https://github.com/MetaCubeX/mihomo)：配置消费端内核。
 
 参考：[Workers 静态资源](https://developers.cloudflare.com/workers/static-assets/)、[Wrangler 配置](https://developers.cloudflare.com/workers/wrangler/configuration/)。
+
