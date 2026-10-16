@@ -1,0 +1,59 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {DatabaseSync} from 'node:sqlite';
+import {parseNodes,convert} from '../src/converter.js';
+import worker from '../src/worker.js';
+const template = readFileSync(new URL('./fixtures/ACL4SSR_Online.ini',import.meta.url),'utf8');
+const node = 'vless://11111111-1111-4111-8111-111111111111@example.com:443?security=reality&pbk=test-public-key&sni=example.com&flow=xtls-rprx-vision#香港';
+test('VLESS Reality, duplicate names, IPv6, WS and Trojan mapping', () => {
+  const p = parseNodes(node+'\n'+node);
+  assert.equal(p[0]['reality-opts']['public-key'],'test-public-key');
+  assert.notEqual(p[0].name,p[1].name);
+  assert.equal(p[0].flow,'xtls-rprx-vision');
+  const ws = parseNodes('trojan://pass%40word@[::1]:443?type=ws&path=%2Fws&host=cdn.example.com&sni=tls.example.com')[0];
+  assert.equal(ws.password,'pass@word'); assert.equal(ws.server,'::1'); assert.equal(ws.sni,'tls.example.com'); assert.equal(ws['ws-opts'].path,'/ws');
+  const grpc = parseNodes(node.replace('flow=xtls-rprx-vision','type=grpc&serviceName=service'))[0];
+  assert.equal(grpc['grpc-opts']['grpc-service-name'],'service');
+});
+test('rejects unsupported and malformed links without silently dropping nodes', () => {
+  for (const text of ['', 'ss://abc',node.replace('pbk=','unknown='),node.replace('443','0'),node.replace('security=reality','security=bogus'),node.replace('#香港','&headerType=http#香港')]) assert.throws(() => parseNodes(text));
+  assert.throws(() => parseNodes(Array(201).fill(node).join('\n')));
+});
+test('official template keeps group and rule ordering', () => {
+  const c = convert(node,template);
+  assert.equal(c['proxy-groups'].length,11);
+  assert.equal(Object.keys(c['rule-providers']).length,14);
+  assert.equal(c['proxy-groups'][1].type,'url-test');
+  assert.equal(c['proxy-groups'][1].interval,300);
+  assert.equal(c['proxy-groups'][1].tolerance,50);
+  assert.equal(c.rules.at(-1),'MATCH,🐟 漏网之鱼');
+  assert.equal(c.rules.at(-2),'GEOIP,CN,🎯 全球直连');
+  assert.equal(c['proxy-groups'][0].proxies.at(-1),c.proxies[0].name);
+});
+test('D1 lifecycle, optimistic concurrency, authorization and stable subscription', async () => {
+  const db = new DatabaseSync(':memory:');
+  db.exec(readFileSync(new URL('../migrations/0001_profiles.sql',import.meta.url),'utf8'));
+  const env = {DB:{prepare(sql) {return {bind(...values) {return {async first() {return db.prepare(sql).get(...values);},async run() {return {meta:db.prepare(sql).run(...values)};}};}};}},ASSETS:{fetch:async () => new Response('<html>editor</html>')}};
+  const secret = 'test-secret-123456789';
+  const call = (path,method='GET',data,origin='https://test.example') => worker.fetch(new Request(`https://test.example${path}`,{method,headers:{'Content-Type':'application/json',Origin:origin},...(data ? {body:JSON.stringify(data)} : {})}),env);
+  const path = `/api/profiles/${secret}`;
+  assert.equal((await call(path)).status,404);
+  assert.equal((await call(path,'PUT',{nodes:node,revision:0},'https://evil.example')).status,403);
+  assert.equal((await call(path,'PUT',{nodes:node,revision:0})).status,200);
+  assert.equal((await call(path,'PUT',{nodes:node,revision:0})).status,409);
+  assert.equal((await (await call(path)).json()).revision,1);
+  const oldFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(template);
+  try {
+    const first = await call(`/${secret}/sub`);
+    assert.equal(first.headers.get('Cache-Control'),'no-store');
+    assert.equal((await first.json()).proxies[0].server,'example.com');
+    assert.equal((await call(path,'PUT',{nodes:node.replace('@example.com','@new.example.com'),revision:1})).status,200);
+    assert.equal((await (await call(`/${secret}/sub`)).json()).proxies[0].server,'new.example.com');
+    assert.equal((await call('/unknown-secret-12345/sub')).status,404);
+    assert.equal((await call(`/${secret}`)).status,200);
+    assert.equal((await call('/api/not-found')).status,404);
+    assert.equal((await call(path,'PUT',{nodes:'x'.repeat(140000),revision:2})).status,413);
+  } finally {globalThis.fetch = oldFetch; db.close();}
+});

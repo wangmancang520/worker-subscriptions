@@ -1,0 +1,6 @@
+CREATE TABLE profiles (
+  id TEXT PRIMARY KEY,
+  nodes TEXT NOT NULL,
+  revision INTEGER NOT NULL DEFAULT 1,
+  updated_at TEXT NOT NULL
+);
