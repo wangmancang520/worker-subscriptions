@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/brand/nodebook-logo-v1.png" width="100" height="100" alt="Nodebook 节点簿 Logo"></p>
+
 # 节点簿 · Cloudflare Workers 订阅转换
 
 **节点会变，订阅地址不变。**
