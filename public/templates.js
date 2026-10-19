@@ -24,4 +24,10 @@ export const templates = definitions.map(([id,suffix,label,zh,en,family,mode]) =
   url:`https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online${suffix ? '_'+suffix : ''}.ini`
 }));
 export const templateById = id => templates.find(t => t.id === id);
+templates.splice(1,0,{
+  id:'full-noauto-steam-web',name:'ACL4SSR Online Full No Auto · Steam Store & Community',
+  description:{zh:'自定义模板：Steam 商店与社区独立分组；登录、CM、API 和已覆盖的下载域名固定直连。直连使用本地出口，不保证国内 IP 或国内 CDN。',en:'Custom preset: separate Steam store/community policy; login, CM, API and covered downloads use DIRECT. Direct uses your local exit; a Chinese IP/CDN is not guaranteed.'},
+  family:'full',mode:'manual',custom:true,
+  url:templates[0].url
+});
 export const DEFAULT_TEMPLATE = 'full-noauto';

@@ -9,7 +9,7 @@ const node = 'vless://11111111-1111-4111-8111-111111111111@example.com:443?secur
 for(const template of templates) test(`${template.name}: valid groups with named and unmatched regions`,()=>{
   const ini=readFileSync(new URL('./fixtures/templates/'+template.url.split('/').at(-1),import.meta.url),'utf8');
   for(const names of [['HK Hong Kong','JP Japan','US Netflix'],['Custom node']]){
-    const config=convert(names.map(name=>node+encodeURIComponent(name)).join('\n'),ini);
+    const config=convert(names.map(name=>node+encodeURIComponent(name)).join('\n'),ini,template.id);
     const policies=new Set(['DIRECT','REJECT',...config.proxies.map(p=>p.name),...config['proxy-groups'].map(g=>g.name)]);
     assert.ok(config.rules.at(-1).startsWith('MATCH,'));
     for(const group of config['proxy-groups']){

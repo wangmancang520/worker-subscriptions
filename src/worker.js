@@ -54,7 +54,7 @@ export default {
         if (!validSecret(parts[0])) return json({error:'订阅不存在'},404);
         const row = await env.DB.prepare('SELECT nodes, template FROM profiles WHERE id = ?').bind(await hash(parts[0])).first();
         if (!row) return json({error:'订阅不存在'},404);
-        let config; try {config = convert(row.nodes, await template(row.template));} catch {return json({error:'配置生成失败，请检查节点或稍后重试 ACL4SSR 模板'},502);}
+        let config; try {config = convert(row.nodes, await template(row.template), row.template);} catch {return json({error:'配置生成失败，请检查节点或稍后重试 ACL4SSR 模板'},502);}
         // JSON is valid YAML 1.2 and accepted by Mihomo's YAML configuration loader.
         return new Response(request.method === 'HEAD' ? null : JSON.stringify(config,null,2),{headers:{...secureHeaders,'Content-Type':'text/yaml; charset=utf-8','Content-Disposition':'attachment; filename="subscription.yaml"','profile-update-interval':'6'}});
       }

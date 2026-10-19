@@ -1,8 +1,9 @@
 import {parseNodes} from '../public/nodes.js';
+import {applyCustomTemplate} from './custom-templates.js';
 export {parseNodes};
 export const TEMPLATE_URL = 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online.ini';
 
-export function convert(nodes, template) {
+export function convert(nodes, template, templateId) {
   const proxies = parseNodes(nodes), groups = [], rules = [], providers = {};
   for (const raw of template.split(/\r?\n/)) {
     const line = raw.trim();
@@ -45,5 +46,5 @@ export function convert(nodes, template) {
   const policies = new Set(['DIRECT','REJECT', ...proxies.map(p => p.name), ...activeGroups.map(g => g.name)]);
   for (const g of activeGroups) for (const p of g.proxies) if (!policies.has(p)) throw new Error('模板引用未知分组');
   for (const rule of rules) if (!policies.has(rule.split(',').at(-1))) throw new Error('模板规则引用未知分组');
-  return {'mixed-port':7890, 'allow-lan':false, mode:'rule', 'log-level':'info', ipv6:true, proxies, 'proxy-groups':activeGroups, 'rule-providers':providers, rules};
+  return applyCustomTemplate({'mixed-port':7890, 'allow-lan':false, mode:'rule', 'log-level':'info', ipv6:true, proxies, 'proxy-groups':activeGroups, 'rule-providers':providers, rules}, templateId);
 }

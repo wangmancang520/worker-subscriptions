@@ -49,6 +49,7 @@ function localize() {
   document.title=view==='landing'?t('brand'):`${t({access:'step1',nodes:'step2',result:'step3'}[view])} · Nodebook`;
 }
 function renderTemplates() {
+  $('template-total').textContent=templates.length;
   const query=$('template-search').value.trim().toLowerCase(),filter=$('template-filter').value;
   const matches=templates.filter(item=>(filter==='all'||item.family===filter||item.mode===filter)&&`${item.name} ${item.description.zh} ${item.description.en}`.toLowerCase().includes(query));
   $('template-select').replaceChildren();
