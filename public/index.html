@@ -20,7 +20,7 @@
 <h1 id="nodes-title" tabindex="-1" data-t="nodesTitle">Nodes and template</h1>
 <form id="editor">
 <div class="label-row"><label for="node-input" data-t="nodeLinks">Node links, one per line</label><span id="node-count" class="muted" aria-live="polite"></span></div>
-<textarea id="node-input" spellcheck="false" autocomplete="off" aria-describedby="validation limit" placeholder="vless://uuid@server:443?security=tls&type=ws#HK&#10;hysteria2://password@server:443?sni=example.com#JP&#10;ss://YWVzLTI1Ni1nY206cGFzcw@server:8388#US"></textarea>
+<div class="editor"><div id="node-gutter" class="gutter" aria-hidden="true"></div><div class="editor-body"><textarea id="node-input" spellcheck="false" autocomplete="off" aria-describedby="validation limit" placeholder="vless://uuid@server:443?security=tls&type=ws#HK&#10;hysteria2://password@server:443?sni=example.com#JP&#10;ss://YWVzLTI1Ni1nY206cGFzcw@server:8388#US"></textarea><div id="node-mirror" class="mirror" aria-hidden="true"></div></div></div>
 <p id="validation" class="validation" role="status" aria-live="polite"></p>
 <p id="limit" class="hint" data-t="limit">Up to 200 nodes. VLESS, Trojan, Hysteria2, TUIC, VMess, Shadowsocks.</p>
 

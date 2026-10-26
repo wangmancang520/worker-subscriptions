@@ -63,12 +63,22 @@ input, select, textarea, button {
   border: 1px solid var(--border); border-radius: 6px;
 }
 input, select { height: 38px; padding: 0 10px; }
-textarea {
-  width: 100%; min-height: 200px; max-height: 65vh; padding: 10px; resize: vertical; overflow-y: auto;
-  font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all;
+.editor { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+.editor:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
+.editor:has(textarea[aria-invalid="true"]) { border-color: var(--error); }
+.editor-body { position: relative; flex: 1; min-width: 0; }
+.editor textarea, .editor .mirror, .gutter {
+  padding: 10px; font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
-textarea[aria-invalid="true"] { border-color: var(--error); }
+.editor textarea, .editor .mirror { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all; }
+.editor textarea { display: block; width: 100%; min-height: 200px; border: none; border-radius: 0 6px 6px 0; resize: none; overflow: hidden; background: transparent; }
+.editor textarea:focus-visible { outline: none; }
+.mirror { position: absolute; top: 0; left: 0; width: 100%; visibility: hidden; pointer-events: none; }
+.gutter {
+  flex: none; min-width: 3.2em; padding-right: 8px; text-align: right; color: var(--muted);
+  border-right: 1px solid var(--border); user-select: none; font-variant-numeric: tabular-nums;
+}
+.gutter .error { color: var(--error); font-weight: 600; }
 select[size] { width: 100%; height: auto; padding: 4px; margin-top: 8px; }
 select[size] option { padding: 4px 6px; border-radius: 4px; }
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {

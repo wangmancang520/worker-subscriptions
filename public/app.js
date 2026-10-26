@@ -8,7 +8,7 @@ let language = ['zh','en'].includes(preferredLanguage) ? preferredLanguage : (/^
 let theme = preferences.get('nodebook-theme') || 'system';
 if (!['system','light','dark'].includes(theme)) theme = 'system';
 let view = 'access', secret = '', revision = 0, busy = false, dirty = false, selectedTemplate = DEFAULT_TEMPLATE, parsed = [], toastTimer;
-let savedNodes = '', savedTemplate = DEFAULT_TEMPLATE;
+let savedNodes = '', savedTemplate = DEFAULT_TEMPLATE, errorLine = 0;
 const t = key => (language === 'zh' ? zh : en)[key] || key;
 const nodeCount = n => `${n} ${language === 'en' && n === 1 ? 'node' : t('count')}`;
 const validKey = value => /^[A-Za-z0-9_-]{16,128}$/.test(value);
@@ -75,16 +75,30 @@ function validate() {
   const text=$('node-input').value;const lines=text.split(/\r?\n/).filter(line=>line.trim());const counts={};
   for(const line of lines) {const type=protocolOf(line);if(type)counts[type]=(counts[type]||0)+1;}
   $('node-count').textContent=lines.length?[nodeCount(lines.length),...Object.entries(counts).map(([type,n])=>`${PROTOCOLS[type]} ${n}`)].join(' · '):'';
-  parsed=[];let valid=false;
+  parsed=[];let valid=false;errorLine=0;
   try {
     if(new TextEncoder().encode(JSON.stringify({nodes:text,revision,template:selectedTemplate})).length>131072)throw Error(t('tooLarge'));
     parsed=parseNodes(text,language);valid=true;$('validation').textContent=t('valid');$('validation').className='validation valid';
-  }catch(error){$('validation').textContent=text.trim()?error.message:t('empty');$('validation').className='validation'+(text.trim()?' error':'');}
+  }catch(error){errorLine=+(error.message.match(/^(?:第 |Line )(\d+)/)?.[1]||0);$('validation').textContent=text.trim()?error.message:t('empty');$('validation').className='validation'+(text.trim()?' error':'');}
   fitNodes();
   $('node-input').setAttribute('aria-invalid',String(Boolean(text.trim())&&!valid));
   $('save').disabled=busy||!valid||!templateById(selectedTemplate);return valid;
 }
-function fitNodes(){const box=$('node-input');if(box.offsetParent===null)return;box.style.height='auto';box.style.height=`${box.scrollHeight+2}px`;}
+// A hidden mirror measures each wrapped line, so the textarea grows without
+// collapsing first (which made the page jump) and line numbers stay aligned.
+// Blank lines are skipped, matching the numbering in parseNodes errors.
+function fitNodes(){
+  const box=$('node-input');if(box.offsetParent===null)return;
+  const lines=box.value.split('\n');
+  $('node-mirror').replaceChildren(...lines.map(line=>{const row=document.createElement('div');row.textContent=line||'\u200b';return row;}));
+  let n=0;
+  $('node-gutter').replaceChildren(...[...$('node-mirror').children].map((row,i)=>{
+    const cell=document.createElement('div');cell.style.height=`${row.offsetHeight}px`;
+    if(lines[i].trim()){cell.textContent=++n;if(n===errorLine)cell.className='error';}
+    return cell;
+  }));
+  box.style.height=`${Math.max(200,$('node-mirror').offsetHeight)}px`;
+}
 function setBusy(value){busy=value;for(const id of ['open','create','node-input','template-search','template-filter','template-select','key-input','nodes-back'])$(id).disabled=value;validate();}
 function updateDirty(){dirty=$('node-input').value!==savedNodes||selectedTemplate!==savedTemplate;}
 async function load(key) {
