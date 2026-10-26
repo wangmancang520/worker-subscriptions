@@ -34,11 +34,11 @@ p { margin: 0 0 .75rem; }
 .brand { display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; font-weight: 600; }
 .brand img { border-radius: 6px; }
 .preferences { display: flex; gap: 4px; }
-main { flex: 1; padding-bottom: 48px; }
+main { flex: 1; padding-bottom: 48px; overflow-x: clip; }
 footer { padding-top: 16px; padding-bottom: 24px; color: var(--muted); font-size: .85rem; border-top: 1px solid var(--border); }
 
 .steps { display: flex; gap: 0; list-style: none; padding: 0; margin: 8px 0 28px; font-size: .85rem; color: var(--muted); counter-reset: step; }
-.steps li { counter-increment: step; flex: 1; padding-top: 8px; border-top: 2px solid var(--border); }
+.steps li { counter-increment: step; flex: 1; padding-top: 8px; border-top: 2px solid var(--border); transition: border-color .3s ease, color .3s ease; }
 .steps li + li { margin-left: 8px; }
 .steps li::before { content: counter(step) ". "; }
 .steps li.complete { border-color: var(--accent); }
@@ -64,8 +64,9 @@ input, select, textarea, button {
 }
 input, select { height: 38px; padding: 0 10px; }
 textarea {
-  width: 100%; min-height: 200px; padding: 10px; resize: vertical;
-  font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; overflow-x: auto;
+  width: 100%; min-height: 200px; max-height: 65vh; padding: 10px; resize: vertical; overflow-y: auto;
+  font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all;
 }
 textarea[aria-invalid="true"] { border-color: var(--error); }
 select[size] { width: 100%; height: auto; padding: 4px; margin-top: 8px; }
@@ -101,6 +102,17 @@ button.link:hover:not(:disabled) { color: var(--text); }
 .status.error { background: var(--error); color: #fff; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 [hidden] { display: none !important; }
+
+.view.enter { animation: enter .28s ease-out both; }
+.view.enter-back { animation: enter-back .28s ease-out both; }
+@keyframes enter { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@keyframes enter-back { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+.status { animation: toast .2s ease-out both; }
+@keyframes toast { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .view.enter, .view.enter-back, .status { animation: none; }
+  .steps li { transition: none; }
+}
 
 @media (max-width: 520px) {
   .box { padding: 16px; }

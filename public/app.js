@@ -21,8 +21,12 @@ function updateReveal() {document.querySelectorAll('[data-reveal]').forEach(butt
 function go(next,{replace=false,history=true}={}) {
   if(next==='nodes'&&!secret) next='access';
   if(next==='result'&&!revision) next='nodes';
+  const order=['access','nodes','result'],back=order.indexOf(next)<order.indexOf(view);
   view=next;
-  for(const id of ['access','nodes','result']) $(id).hidden=id!==next;
+  for(const id of order) $(id).hidden=id!==next;
+  // Restart the entrance animation; direction follows the step order.
+  const section=$(next);section.classList.remove('enter','enter-back');void section.offsetWidth;section.classList.add(back?'enter-back':'enter');
+  if(next==='nodes') fitNodes();
   const index=['access','nodes','result'].indexOf(next);
   document.querySelectorAll('[data-step]').forEach((item,i)=>{item.className=i===index?'active':i<index?'complete':''; if(i===index)item.setAttribute('aria-current','step');else item.removeAttribute('aria-current');});
   $('status').hidden=true;
@@ -76,9 +80,11 @@ function validate() {
     if(new TextEncoder().encode(JSON.stringify({nodes:text,revision,template:selectedTemplate})).length>131072)throw Error(t('tooLarge'));
     parsed=parseNodes(text,language);valid=true;$('validation').textContent=t('valid');$('validation').className='validation valid';
   }catch(error){$('validation').textContent=text.trim()?error.message:t('empty');$('validation').className='validation'+(text.trim()?' error':'');}
+  fitNodes();
   $('node-input').setAttribute('aria-invalid',String(Boolean(text.trim())&&!valid));
   $('save').disabled=busy||!valid||!templateById(selectedTemplate);return valid;
 }
+function fitNodes(){const box=$('node-input');if(box.offsetParent===null)return;box.style.height='auto';box.style.height=`${box.scrollHeight+2}px`;}
 function setBusy(value){busy=value;for(const id of ['open','create','node-input','template-search','template-filter','template-select','key-input','nodes-back'])$(id).disabled=value;validate();}
 function updateDirty(){dirty=$('node-input').value!==savedNodes||selectedTemplate!==savedTemplate;}
 async function load(key) {
@@ -124,6 +130,7 @@ for(const button of document.querySelectorAll('[data-copy]'))button.onclick=asyn
   const input=$(button.dataset.copy);
   try{await navigator.clipboard.writeText(input.value);toast('copied');}catch{input.type='text';input.select();updateReveal();toast('copyFailed',true);}
 };
+window.addEventListener('resize',fitNodes);
 window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
 window.addEventListener('popstate',event=>{
   if(dirty&&!confirm(t('discard'))){go(view,{replace:true});return;}
