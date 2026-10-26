@@ -6,7 +6,7 @@
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/wangmancang520/worker-subscriptions)
 
-基于 Cloudflare Workers 与 D1 的自托管订阅转换服务。通过网页管理 VLESS / Trojan 节点，使用 ACL4SSR 官方在线模板生成 Mihomo 配置，利用访问密钥路径保持编辑地址和订阅地址固定。
+基于 Cloudflare Workers 与 D1 的自托管订阅转换服务。通过网页管理 VLESS、Trojan、Hysteria2、TUIC、VMess、Shadowsocks 节点，使用 ACL4SSR 官方在线模板生成 Mihomo 配置，利用访问密钥路径保持编辑地址和订阅地址固定。
 
 ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)
 ![Storage D1](https://img.shields.io/badge/Storage-D1-F38020)
@@ -23,7 +23,7 @@
 - **Worker 内转换**：不依赖第三方订阅转换站，不向模板服务器发送节点信息。
 - **ACL4SSR 分流**：保留官方在线模板的策略组与规则顺序，生成 Mihomo rule-providers。
 - **18 种在线模板**：支持搜索与分类，默认 ACL4SSR Online Full No Auto，模板选择随配置保存。
-- **四步向导**：首页 → 访问密钥 → 节点与模板 → 订阅链接。
+- **三步完成**：访问密钥 → 节点与模板 → 订阅链接，界面简洁，无多余装饰。
 - **中英文与主题**：自动跟随浏览器语言和系统主题，可随时切换。
 - **明确校验**：错误行、未知参数和不支持的协议直接报错；版本检查防止多页面互相覆盖。
 
@@ -120,9 +120,9 @@ npm test
 
 ## 使用
 
-1. 首页点击「开始使用」。老用户输入访问密钥打开配置，新用户点击「随机生成密钥并创建」。
+1. 打开首页。老用户输入访问密钥并点击「打开」，新用户点击「生成密钥」。
 2. 每行粘贴一个节点链接，查看数量、类型和格式检查结果。新密钥在保存节点后才写入数据库。
-3. 搜索或筛选订阅模板，点击「保存并生成订阅」。新配置默认使用 ACL4SSR Online Full No Auto。
+3. 搜索或筛选订阅模板，点击「保存」。新配置默认使用 ACL4SSR Online Full No Auto。
 4. 复制订阅链接，在 Mihomo 客户端中选择「从 URL 导入」。结果页同时提供密钥与直达编辑网址，默认遮罩显示。
 5. 以后通过编辑网址或密钥打开配置，修改并保存，在客户端更新原订阅即可。
 
@@ -134,9 +134,13 @@ npm test
 
 - VLESS：UUID、TLS、Reality、XTLS Vision，TCP / WS / gRPC。
 - Trojan：TLS，TCP / WS / gRPC。
+- Hysteria2（`hysteria2://` 或 `hy2://`）：密码、SNI、insecure、salamander 混淆、端口跳跃 `mport`、`pinSHA256`、ALPN、up/down。
+- TUIC v5（`tuic://uuid:password@...`）：SNI、ALPN、拥塞控制、UDP 中继模式、allow_insecure、disable_sni。
+- VMess（v2rayN `vmess://base64(JSON)`）：TCP / WS / gRPC / H2，TLS、SNI、ALPN、指纹；不支持 HTTP 伪装头。
+- Shadowsocks（SIP002、明文 userinfo 的 2022 加密、旧版整段 base64）：AEAD、2022-blake3 及常见流加密；插件支持 obfs-local / simple-obfs 与 v2ray-plugin（websocket）。
 - 支持 SNI、指纹、ALPN、WS Host/path、gRPC serviceName、Reality public-key/short-id。
 - 每份最多 200 节点，请求最大 128 KiB。错误行或未知参数直接拒绝，避免悄悄生成错误配置。
-- 暂不支持 VMess、Shadowsocks、Hysteria2、远程订阅 URL、XHTTP 和其他客户端格式。不支持旧版 Clash 内核中的 VLESS。
+- 暂不支持 Hysteria v1、ShadowsocksR、WireGuard、远程订阅 URL、XHTTP 和其他客户端格式。不支持旧版 Clash 内核中的 VLESS。
 - JSON 形式输出 YAML 1.2 配置（文件名 `.yaml`），由 Mihomo 解析。
 
 ## ACL4SSR 模板

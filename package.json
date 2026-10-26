@@ -12,7 +12,7 @@
   "devDependencies": {
     "wrangler": "^4.0.0"
   },
-  "description": "基于 Cloudflare Workers 与 D1 的自托管订阅转换服务，支持 VLESS / Trojan、ACL4SSR 分流与固定暗号订阅地址。",
+  "description": "基于 Cloudflare Workers 与 D1 的自托管订阅转换服务，支持 VLESS / Trojan / Hysteria2 / TUIC / VMess / Shadowsocks、ACL4SSR 分流与固定暗号订阅地址。",
   "repository": {
     "type": "git",
     "url": "https://github.com/wangmancang520/worker-subscriptions.git"

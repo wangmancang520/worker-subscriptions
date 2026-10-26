@@ -1,4 +1,4 @@
-import {parseNodes} from './nodes.js';
+import {parseNodes,PROTOCOLS,protocolOf} from './nodes.js';
 import {templates,templateById,DEFAULT_TEMPLATE} from './templates.js';
 import {zh,en} from './i18n.js';
 const $ = id => document.getElementById(id);
@@ -7,7 +7,7 @@ const preferredLanguage = preferences.get('nodebook-language');
 let language = ['zh','en'].includes(preferredLanguage) ? preferredLanguage : (/^zh-(CN|Hans)(-|$)/i.test(navigator.language) ? 'zh' : 'en');
 let theme = preferences.get('nodebook-theme') || 'system';
 if (!['system','light','dark'].includes(theme)) theme = 'system';
-let view = 'landing', secret = '', revision = 0, busy = false, dirty = false, selectedTemplate = DEFAULT_TEMPLATE, parsed = [], toastTimer;
+let view = 'access', secret = '', revision = 0, busy = false, dirty = false, selectedTemplate = DEFAULT_TEMPLATE, parsed = [], toastTimer;
 let savedNodes = '', savedTemplate = DEFAULT_TEMPLATE;
 const t = key => (language === 'zh' ? zh : en)[key] || key;
 const nodeCount = n => `${n} ${language === 'en' && n === 1 ? 'node' : t('count')}`;
@@ -21,39 +21,39 @@ function updateReveal() {document.querySelectorAll('[data-reveal]').forEach(butt
 function go(next,{replace=false,history=true}={}) {
   if(next==='nodes'&&!secret) next='access';
   if(next==='result'&&!revision) next='nodes';
-  view=next; $('flow').hidden=next==='landing';
-  for(const id of ['landing','access','nodes','result']) $(id).hidden=id!==next;
+  view=next;
+  for(const id of ['access','nodes','result']) $(id).hidden=id!==next;
   const index=['access','nodes','result'].indexOf(next);
   document.querySelectorAll('[data-step]').forEach((item,i)=>{item.className=i===index?'active':i<index?'complete':''; if(i===index)item.setAttribute('aria-current','step');else item.removeAttribute('aria-current');});
   $('status').hidden=true;
   if(next==='result') renderResult();
   const path=secret&&revision ? `/${secret}` : '/';
-  const hash=next==='landing'?'':next==='nodes'&&revision?'':`#${next}`;
+  const hash=(next==='access'&&!(secret&&revision))||(next==='nodes'&&revision)?'':`#${next}`;
   if(history) window.history[replace?'replaceState':'pushState']({view:next},'',path+hash);
-  document.title=`${next==='landing'?t('brand'):t({access:'step1',nodes:'step2',result:'step3'}[next])} · Nodebook`;
+  document.title=`${t({access:'step1',nodes:'step2',result:'step3'}[next])} · ${t('brand')}`;
   window.scrollTo({top:0,behavior:'instant'});
-  $(next==='landing'?'hero-title':`${next}-title`).focus({preventScroll:true});
+  $(`${next}-title`).focus({preventScroll:true});
 }
 function applyTheme() {
   if(theme==='system') delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=theme;
-  $('theme-label').textContent=t(theme);$('theme-icon').textContent={system:'◐',light:'☼',dark:'☾'}[theme];$('theme').setAttribute('aria-label',t('themeAria'));
+  $('theme-label').textContent=`${t('themeLabel')}: ${t(theme)}`;$('theme').setAttribute('aria-label',t('themeAria'));
 }
 function localize() {
   document.documentElement.lang=language==='zh'?'zh-CN':'en';
   document.querySelectorAll('[data-t]').forEach(el=>{el.textContent=t(el.dataset.t);});
   document.querySelectorAll('[data-placeholder]').forEach(el=>el.placeholder=t(el.dataset.placeholder));
-  $('language').textContent=language==='zh'?'中 / EN':'EN / 中';$('language').setAttribute('aria-label',t('languageAria'));
-  document.querySelector('.progress').setAttribute('aria-label',language==='zh'?'操作步骤':'Progress');
+  $('language').textContent=language==='zh'?'English':'中文';$('language').setAttribute('aria-label',t('languageAria'));
+  document.querySelector('.steps').setAttribute('aria-label',language==='zh'?'操作步骤':'Progress');
   $('status').hidden=true;applyTheme();updateReveal();renderTemplates();validate();
   if(view==='result') renderResult();
-  document.title=view==='landing'?t('brand'):`${t({access:'step1',nodes:'step2',result:'step3'}[view])} · Nodebook`;
+  document.title=`${t({access:'step1',nodes:'step2',result:'step3'}[view])} · ${t('brand')}`;
 }
 function renderTemplates() {
   $('template-total').textContent=templates.length;
   const query=$('template-search').value.trim().toLowerCase(),filter=$('template-filter').value;
   const matches=templates.filter(item=>(filter==='all'||item.family===filter||item.mode===filter)&&`${item.name} ${item.description.zh} ${item.description.en}`.toLowerCase().includes(query));
   $('template-select').replaceChildren();
-  for(const item of matches) {const option=document.createElement('option');option.value=item.id;option.textContent=`${item.id===DEFAULT_TEMPLATE?'✦ ':''}${item.name} · ${t(item.mode)}`;option.selected=item.id===selectedTemplate;$('template-select').append(option);}
+  for(const item of matches) {const option=document.createElement('option');option.value=item.id;option.textContent=`${item.name} · ${t(item.mode)}${item.id===DEFAULT_TEMPLATE?` (${t('defaultTag')})`:''}`;option.selected=item.id===selectedTemplate;$('template-select').append(option);}
   if(!matches.length){const option=new Option(t('noTemplates'),'');option.disabled=true;$('template-select').append(option);}
   // Filtering does not silently change the saved selection.
   $('template-select').value=matches.some(x=>x.id===selectedTemplate)?selectedTemplate:'';
@@ -62,17 +62,15 @@ function renderTemplates() {
 function renderDetail() {
   const item=templateById(selectedTemplate);const box=$('template-detail');box.replaceChildren();
   if(!item)return;
-  const badge=document.createElement('span');badge.className='chip';badge.textContent=`${t('selected')} · ${t(item.family)} · ${t(item.mode)}`;
-  const title=document.createElement('strong');title.textContent=item.name;
+  const title=document.createElement('strong');title.textContent=`${item.name} · ${t(item.family)} · ${t(item.mode)}`;
   const desc=document.createElement('p');desc.textContent=item.description[language];
   const note=document.createElement('p');note.textContent=item.mode==='manual'?t('manualHint'):t('regionHint');
-  box.append(badge,title,desc,note);
+  box.append(title,desc,note);
 }
 function validate() {
-  const text=$('node-input').value;const lines=text.split(/\r?\n/).filter(line=>line.trim());const counts={vless:0,trojan:0};
-  for(const line of lines) {const type=line.trim().split(':')[0].toLowerCase();if(type in counts)counts[type]++;}
-  $('node-count').replaceChildren();
-  for(const label of [nodeCount(lines.length),...Object.entries(counts).filter(([,n])=>n).map(([type,n])=>`${type==='vless'?'VLESS':'Trojan'} ${n}`)]) {const chip=document.createElement('span');chip.className='chip';chip.textContent=label;$('node-count').append(chip);}
+  const text=$('node-input').value;const lines=text.split(/\r?\n/).filter(line=>line.trim());const counts={};
+  for(const line of lines) {const type=protocolOf(line);if(type)counts[type]=(counts[type]||0)+1;}
+  $('node-count').textContent=lines.length?[nodeCount(lines.length),...Object.entries(counts).map(([type,n])=>`${PROTOCOLS[type]} ${n}`)].join(' · '):'';
   parsed=[];let valid=false;
   try {
     if(new TextEncoder().encode(JSON.stringify({nodes:text,revision,template:selectedTemplate})).length>131072)throw Error(t('tooLarge'));
@@ -98,7 +96,6 @@ function renderResult(){
   $('subscription').value=`${location.origin}/${secret}/sub`;$('saved-key').value=secret;$('edit-url').value=`${location.origin}/${secret}`;
   $('saved-count').textContent=nodeCount(parsed.length);hideSecrets();
 }
-$('start').onclick=()=>go('access');
 $('create').onclick=()=>{
   if(busy)return;
   secret=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>b.toString(16).padStart(2,'0')).join('');revision=0;selectedTemplate=DEFAULT_TEMPLATE;
@@ -131,8 +128,8 @@ window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();
 window.addEventListener('popstate',event=>{
   if(dirty&&!confirm(t('discard'))){go(view,{replace:true});return;}
   if(dirty){$('node-input').value=savedNodes;selectedTemplate=savedTemplate;dirty=false;renderTemplates();validate();}
-  go(event.state?.view||(secret&&revision?'nodes':'landing'),{history:false});
+  go(event.state?.view||(secret&&revision?'nodes':'access'),{history:false});
 });
 localize();
 const pathKey=location.pathname.split('/').filter(Boolean)[0];
-if(pathKey){go('access',{history:false});load(pathKey);}else go(location.hash==='#access'?'access':'landing',{replace:true});
+if(pathKey){go('access',{history:false});load(pathKey);}else go('access',{replace:true});

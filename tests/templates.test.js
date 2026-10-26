@@ -24,6 +24,6 @@ test('all interface strings exist in both languages',()=>assert.deepEqual(Object
 test('node errors can be shown in English',()=>{
   assert.throws(()=>parseNodes('invalid','zh'),/第 1 行：节点链接格式无效/);
   assert.throws(()=>parseNodes('invalid','en'),/Line 1: Invalid node link format/);
-  assert.throws(()=>parseNodes('ss://example','en'),/Line 1: Only vless/);
+  assert.throws(()=>parseNodes('socks5://example','en'),/Line 1: Unsupported protocol/);
   assert.throws(()=>parseNodes('','en'),/Enter at least/);
 });
