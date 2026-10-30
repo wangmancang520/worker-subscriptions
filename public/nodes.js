@@ -52,7 +52,8 @@ function parseUrl(line) { try { return new URL(line); } catch { throw new Error(
 
 function vlessOrTrojan(u, type) {
   const q = u.searchParams;
-  onlyParams(q, ['type','security','encryption','flow','sni','peer','fp','pbk','sid','alpn','host','path','serviceName','allowInsecure']);
+  onlyParams(q, ['type','security','encryption','flow','sni','peer','fp','pbk','sid','alpn','host','path','serviceName','allowInsecure',
+    'headerType','spx','mode','authority']);
   const credential = decodeURIComponent(u.username);
   if (!credential || u.password) throw new Error('节点认证信息无效');
   if (type === 'vless' && !UUID.test(credential)) throw new Error('UUID 无效');
@@ -74,6 +75,9 @@ function vlessOrTrojan(u, type) {
   }
   const network = q.get('type') || 'tcp';
   if (!['tcp','ws','grpc'].includes(network)) throw new Error(`暂不支持传输 ${network}`);
+  // Only the default header is supported; spx, gRPC mode and authority have no Mihomo equivalent and are safe to drop.
+  const header = q.get('headerType') || 'none';
+  if (header !== 'none') throw new Error(`暂不支持传输 ${network}/${header}`);
   if (q.get('flow')) {
     if (type !== 'vless' || network !== 'tcp' || !p.tls || q.get('flow') !== 'xtls-rprx-vision') throw new Error('不支持此 flow 组合');
     p.flow = q.get('flow');

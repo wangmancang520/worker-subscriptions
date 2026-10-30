@@ -67,3 +67,12 @@ test('mixed protocols convert with an official template', () => {
   assert.equal(new Set(config.proxies.map(p => p.name)).size, 5);
   assert.ok(config['proxy-groups'][0].proxies.includes('节点 · SG'));
 });
+
+test('VLESS Reality share links with headerType, spx and gRPC extras', () => {
+  const [p] = parseNodes(`vless://${uuid}@example.com:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=example.com&fp=chrome&pbk=KEY&sid=ab&spx=%2F&type=tcp&headerType=none#R`);
+  assert.deepEqual(p, {name:'节点 · R', type:'vless', server:'example.com', port:443, uuid, udp:true, tls:true, servername:'example.com',
+    'client-fingerprint':'chrome', 'reality-opts':{'public-key':'KEY', 'short-id':'ab'}, flow:'xtls-rprx-vision', network:'tcp'});
+  const [g] = parseNodes(`vless://${uuid}@example.com:443?security=tls&type=grpc&serviceName=svc&mode=multi&authority=example.com#G`);
+  assert.deepEqual(g['grpc-opts'], {'grpc-service-name':'svc'});
+  assert.throws(() => parseNodes(`vless://${uuid}@example.com:443?type=tcp&headerType=http`), /暂不支持传输 tcp\/http/);
+});
