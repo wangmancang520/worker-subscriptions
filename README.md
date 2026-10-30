@@ -132,13 +132,13 @@ npm test
 
 ## 支持范围
 
-- VLESS：UUID、TLS、Reality、XTLS Vision，TCP / WS / gRPC。
+- VLESS：UUID、TLS、Reality、XTLS Vision，TCP / WS / gRPC / XHTTP。
 - Trojan：TLS，TCP / WS / gRPC。
 - Hysteria2（`hysteria2://` 或 `hy2://`）：密码、SNI、insecure、salamander 混淆、端口跳跃 `mport`、`pinSHA256`、ALPN、up/down。
 - TUIC v5（`tuic://uuid:password@...`）：SNI、ALPN、拥塞控制、UDP 中继模式、allow_insecure、disable_sni。
 - VMess（v2rayN `vmess://base64(JSON)`）：TCP / WS / gRPC / H2，TLS、SNI、ALPN、指纹；不支持 HTTP 伪装头。
 - Shadowsocks（SIP002、明文 userinfo 的 2022 加密、旧版整段 base64）：AEAD、2022-blake3 及常见流加密；插件支持 obfs-local / simple-obfs 与 v2ray-plugin（websocket）。
-- 支持 SNI、指纹、ALPN、WS Host/path、gRPC serviceName、Reality public-key/short-id。
+- 支持 SNI、指纹、ALPN、WS Host/path、gRPC serviceName、XHTTP host/path/mode、Reality public-key/short-id。
 - 每份最多 200 节点，请求最大 128 KiB。错误行或未知参数直接拒绝，避免悄悄生成错误配置。
 - 暂不支持 Hysteria v1、ShadowsocksR、WireGuard、远程订阅 URL、XHTTP 和其他客户端格式。不支持旧版 Clash 内核中的 VLESS。
 - JSON 形式输出 YAML 1.2 配置（文件名 `.yaml`），由 Mihomo 解析。

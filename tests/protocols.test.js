@@ -76,3 +76,13 @@ test('VLESS Reality share links with headerType, spx and gRPC extras', () => {
   assert.deepEqual(g['grpc-opts'], {'grpc-service-name':'svc'});
   assert.throws(() => parseNodes(`vless://${uuid}@example.com:443?type=tcp&headerType=http`), /暂不支持传输 tcp\/http/);
 });
+
+test('VLESS XHTTP', () => {
+  const [p] = parseNodes(`vless://${uuid}@cdn.example.com:443?encryption=none&security=tls&sni=cdn.example.com&fp=chrome&alpn=h2&type=xhttp&host=cdn.example.com&path=%2Fxh&mode=packet-up#X`);
+  assert.deepEqual(p, {name:'节点 · X', type:'vless', server:'cdn.example.com', port:443, uuid, udp:true, tls:true, servername:'cdn.example.com',
+    'client-fingerprint':'chrome', alpn:['h2'], network:'xhttp', 'xhttp-opts':{path:'/xh', host:'cdn.example.com', mode:'packet-up'}});
+  const [auto] = parseNodes(`vless://${uuid}@example.com:443?security=tls&type=xhttp&mode=auto`);
+  assert.deepEqual(auto['xhttp-opts'], {path:'/'});
+  assert.throws(() => parseNodes(`vless://${uuid}@example.com:443?security=tls&type=xhttp&mode=bogus`), /XHTTP 模式/);
+  assert.throws(() => parseNodes(`trojan://pw@example.com:443?type=xhttp`), /暂不支持传输 xhttp/);
+});

@@ -19,7 +19,8 @@ const errors = {
   "端口跳跃格式无效": "Invalid port hopping range",
   "不支持该插件": "Unsupported plugin",
   "不支持该拥塞控制": "Unsupported congestion control",
-  "不支持该 UDP 中继模式": "Unsupported UDP relay mode"
+  "不支持该 UDP 中继模式": "Unsupported UDP relay mode",
+  "不支持该 XHTTP 模式": "Unsupported XHTTP mode"
 };
 function englishError(message) { return errors[message] || message.replace('暂不支持参数 ', 'Unsupported parameter: ').replace('暂不支持传输 ', 'Unsupported transport: '); }
 
@@ -74,7 +75,7 @@ function vlessOrTrojan(u, type) {
     p['client-fingerprint'] ||= 'chrome';
   }
   const network = q.get('type') || 'tcp';
-  if (!['tcp','ws','grpc'].includes(network)) throw new Error(`暂不支持传输 ${network}`);
+  if (!['tcp','ws','grpc','xhttp'].includes(network) || (network === 'xhttp' && type !== 'vless')) throw new Error(`暂不支持传输 ${network}`);
   // Only the default header is supported; spx, gRPC mode and authority have no Mihomo equivalent and are safe to drop.
   const header = q.get('headerType') || 'none';
   if (header !== 'none') throw new Error(`暂不支持传输 ${network}/${header}`);
@@ -85,6 +86,11 @@ function vlessOrTrojan(u, type) {
   p.network = network;
   if (network === 'ws') p['ws-opts'] = {path: q.get('path') || '/', ...(q.get('host') ? {headers: {Host: q.get('host')}} : {})};
   if (network === 'grpc') p['grpc-opts'] = {'grpc-service-name': q.get('serviceName') || ''};
+  if (network === 'xhttp') {
+    const mode = q.get('mode') || 'auto';
+    if (!['auto','packet-up','stream-up','stream-one'].includes(mode)) throw new Error('不支持该 XHTTP 模式');
+    p['xhttp-opts'] = {path: q.get('path') || '/', ...(q.get('host') ? {host: q.get('host')} : {}), ...(mode !== 'auto' ? {mode} : {})};
+  }
   return p;
 }
 
